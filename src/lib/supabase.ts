@@ -79,11 +79,14 @@ export const signOut = async () => {
 
 export const getCurrentUser = async () => {
   if (!isSupabaseConfigured()) {
+    console.log('Supabase not configured, returning null user');
     return null;
   }
 
   try {
+    console.log('Getting current user from Supabase...');
     const { data: { user } } = await supabase.auth.getUser();
+    console.log('Current user result:', user ? 'User found' : 'No user');
     return user;
   } catch (err) {
     console.error('Error getting current user:', err);

@@ -26,14 +26,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUserProfile = async (userId: string) => {
+  const loadUserProfile = async (userId: string): Promise<Profile | null> => {
     try {
       // Check if Supabase is configured first
       const supabaseStatus = getSupabaseStatus();
       if (!supabaseStatus.isConfigured) {
+        console.log('Supabase not configured, skipping profile load');
         return null;
       }
 
+      console.log('Loading profile for user:', userId);
+      
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -50,64 +53,107 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
 
+      console.log('Profile loaded successfully:', profile);
       return profile;
     } catch (error) {
-      console.error('Error loading user profile:', error);
+      console.error('Exception loading user profile:', error);
       return null;
     }
   };
 
   useEffect(() => {
-    // Check if Supabase is configured
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        console.log('Initializing auth...');
+        
+        // Check if Supabase is configured
+        const supabaseStatus = getSupabaseStatus();
+        
+        if (!supabaseStatus.isConfigured) {
+          console.log('Supabase not configured, setting loading to false');
+          if (mounted) {
+            setLoading(false);
+          }
+          return;
+        }
+
+        // Get initial user
+        console.log('Getting current user...');
+        const currentUser = await getCurrentUser();
+        
+        if (mounted) {
+          setUser(currentUser as User);
+          
+          if (currentUser) {
+            console.log('User found, loading profile...');
+            try {
+              const profile = await loadUserProfile(currentUser.id);
+              if (mounted) {
+                setUserProfile(profile);
+              }
+            } catch (error) {
+              console.error('Error loading profile:', error);
+              // Continue without profile - don't block the app
+              if (mounted) {
+                setUserProfile(null);
+              }
+            }
+          }
+          
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
+
+    // Listen for auth changes only if Supabase is configured
     const supabaseStatus = getSupabaseStatus();
-    
-    if (!supabaseStatus.isConfigured) {
-      setLoading(false);
-      return;
+    let subscription: any = null;
+
+    if (supabaseStatus.isConfigured) {
+      const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          console.log('Auth state changed:', event, session?.user?.id);
+          
+          if (mounted) {
+            if (session?.user) {
+              setUser(session.user as User);
+              try {
+                const profile = await loadUserProfile(session.user.id);
+                if (mounted) {
+                  setUserProfile(profile);
+                }
+              } catch (error) {
+                console.error('Error loading profile on auth change:', error);
+                if (mounted) {
+                  setUserProfile(null);
+                }
+              }
+            } else {
+              setUser(null);
+              setUserProfile(null);
+            }
+            setLoading(false);
+          }
+        }
+      );
+      subscription = authSubscription;
     }
 
-    // Get initial user
-    getCurrentUser().then(async (user) => {
-      setUser(user as User);
-      if (user) {
-        try {
-          const profile = await loadUserProfile(user.id);
-          setUserProfile(profile);
-        } catch (error) {
-          console.error('Error loading profile:', error);
-          // Continue without profile - don't block the app
-          setUserProfile(null);
-        }
+    return () => {
+      mounted = false;
+      if (subscription) {
+        subscription.unsubscribe();
       }
-      setLoading(false);
-    }).catch((error) => {
-      console.error('Error getting initial user:', error);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
-        
-        if (session?.user) {
-          setUser(session.user as User);
-          try {
-            const profile = await loadUserProfile(session.user.id);
-            setUserProfile(profile);
-          } catch (error) {
-            console.error('Error loading profile:', error);
-            setUserProfile(null);
-          }
-        } else {
-          setUser(null);
-          setUserProfile(null);
-        }
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
