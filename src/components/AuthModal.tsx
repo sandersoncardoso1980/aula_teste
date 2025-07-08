@@ -220,3 +220,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               Email: admin@teste.com<br />
               Senha: admin123
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AuthModal;
