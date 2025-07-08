@@ -110,23 +110,6 @@ const Header: React.FC<HeaderProps> = ({ onAuthClick, onAdminClick }) => {
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <button
-                onClick={onAuthClick}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                Entrar
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-};
-
-export default Header;
                 <button
                   onClick={handleSignOut}
                   className="flex items-center space-x-1 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
