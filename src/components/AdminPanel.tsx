@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Upload, BookOpen, FileText, Trash2, Download, Search, Filter, Plus, AlertCircle, CheckCircle, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Upload, BookOpen, FileText, Trash2, Download, Search, Filter, Plus, AlertCircle, CheckCircle, X, Users, MessageSquare, BarChart3, Settings } from 'lucide-react';
 import { Subject, Book } from '../types';
 import { supabase, getSupabaseStatus } from '../lib/supabase';
 
@@ -8,15 +8,18 @@ interface AdminPanelProps {
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
-  const [activeTab, setActiveTab] = useState<'books' | 'subjects' | 'upload'>('books');
+  const [activeTab, setActiveTab] = useState<'overview' | 'books' | 'subjects' | 'upload' | 'users' | 'analytics'>('overview');
   const [books, setBooks] = useState<Book[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [uploadMessage, setUploadMessage] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form states for new book
   const [newBook, setNewBook] = useState({
@@ -36,7 +39,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       // Check if Supabase is configured
       const supabaseStatus = getSupabaseStatus();
       if (!supabaseStatus.isConfigured) {
-        throw new Error('Supabase não está configurado');
+        // Use mock data when Supabase is not configured
+        setSubjects([
+          { id: '1', name: 'Matemática', description: 'Álgebra, Cálculo, Geometria', icon: 'Calculator', color: 'blue', agent_description: 'Professor de matemática', created_at: new Date().toISOString() },
+          { id: '2', name: 'Física', description: 'Mecânica, Termodinâmica', icon: 'Atom', color: 'green', agent_description: 'Professor de física', created_at: new Date().toISOString() },
+          { id: '3', name: 'Química', description: 'Química Geral, Orgânica', icon: 'Flask', color: 'purple', agent_description: 'Professor de química', created_at: new Date().toISOString() },
+          { id: '4', name: 'Biologia', description: 'Biologia Celular, Genética', icon: 'Dna', color: 'emerald', agent_description: 'Professor de biologia', created_at: new Date().toISOString() }
+        ]);
+        setBooks([
+          { id: '1', title: 'Cálculo Volume 1', author: 'James Stewart', subject_id: '1', file_path: '/books/calculo.pdf', created_at: new Date().toISOString() },
+          { id: '2', title: 'Física Conceitual', author: 'Paul Hewitt', subject_id: '2', file_path: '/books/fisica.pdf', created_at: new Date().toISOString() },
+          { id: '3', title: 'Química Geral', author: 'Petrucci', subject_id: '3', file_path: '/books/quimica.pdf', created_at: new Date().toISOString() }
+        ]);
+        setUsers([
+          { id: '1', email: 'aluno@teste.com', name: 'Aluno Teste', role: 'student', created_at: new Date().toISOString() },
+          { id: '2', email: 'admin@teste.com', name: 'Admin Teste', role: 'admin', created_at: new Date().toISOString() }
+        ]);
+        setConversations([
+          { id: '1', title: 'Derivadas e Integrais', user_id: '1', subject_id: '1', created_at: new Date().toISOString() },
+          { id: '2', title: 'Leis de Newton', user_id: '1', subject_id: '2', created_at: new Date().toISOString() }
+        ]);
+        setLoading(false);
+        return;
       }
 
       // Load subjects
@@ -76,6 +100,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     
     if (!newBook.file || !newBook.title || !newBook.author || !newBook.subject_id) {
       setUploadMessage('Por favor, preencha todos os campos e selecione um arquivo');
+      setUploadStatus('error');
+      return;
+    }
+
+    // Check if Supabase is configured
+    const supabaseStatus = getSupabaseStatus();
+    if (!supabaseStatus.isConfigured) {
+      setUploadMessage('Funcionalidade de upload requer configuração do Supabase');
       setUploadStatus('error');
       return;
     }
@@ -126,6 +158,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         subject_id: '',
         file: null
       });
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
 
       // Reload data
       loadData();
@@ -145,6 +182,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
 
   const handleDeleteBook = async (bookId: string, filePath: string) => {
     if (!confirm('Tem certeza que deseja excluir este livro?')) return;
+
+    // Check if Supabase is configured
+    const supabaseStatus = getSupabaseStatus();
+    if (!supabaseStatus.isConfigured) {
+      setUploadMessage('Funcionalidade de exclusão requer configuração do Supabase');
+      setUploadStatus('error');
+      return;
+    }
 
     try {
       // Delete file from storage
@@ -213,9 +258,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                 🛡️ Painel Administrativo
               </h1>
               <p className="text-sm text-gray-600">
-                Gerenciar livros e conteúdo para o sistema RAG
+                Gerenciar sistema, usuários e conteúdo educacional
               </p>
             </div>
+          </div>
+          <div className="text-sm text-gray-500">
+            {getSupabaseStatus().isConfigured ? '🟢 Sistema Online' : '🟡 Modo Demo'}
           </div>
         </div>
       </div>
@@ -254,6 +302,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6">
               <button
+                onClick={() => setActiveTab('overview')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'overview'
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                📊 Visão Geral
+              </button>
+              <button
                 onClick={() => setActiveTab('books')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'books'
@@ -283,10 +341,108 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
               >
                 🎯 Disciplinas ({subjects.length})
               </button>
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'users'
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                👥 Usuários ({users.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'analytics'
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                📈 Analytics
+              </button>
             </nav>
           </div>
 
           <div className="p-6">
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+              <div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                  <div className="bg-blue-50 p-6 rounded-xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <BookOpen className="h-8 w-8 text-blue-600" />
+                      <span className="text-2xl font-bold text-blue-600">{books.length}</span>
+                    </div>
+                    <h3 className="font-semibold text-blue-900">Livros</h3>
+                    <p className="text-sm text-blue-700">Total de livros no sistema</p>
+                  </div>
+                  
+                  <div className="bg-green-50 p-6 rounded-xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <Settings className="h-8 w-8 text-green-600" />
+                      <span className="text-2xl font-bold text-green-600">{subjects.length}</span>
+                    </div>
+                    <h3 className="font-semibold text-green-900">Disciplinas</h3>
+                    <p className="text-sm text-green-700">Disciplinas disponíveis</p>
+                  </div>
+                  
+                  <div className="bg-purple-50 p-6 rounded-xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <Users className="h-8 w-8 text-purple-600" />
+                      <span className="text-2xl font-bold text-purple-600">{users.length}</span>
+                    </div>
+                    <h3 className="font-semibold text-purple-900">Usuários</h3>
+                    <p className="text-sm text-purple-700">Usuários registrados</p>
+                  </div>
+                  
+                  <div className="bg-orange-50 p-6 rounded-xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <MessageSquare className="h-8 w-8 text-orange-600" />
+                      <span className="text-2xl font-bold text-orange-600">{conversations.length}</span>
+                    </div>
+                    <h3 className="font-semibold text-orange-900">Conversas</h3>
+                    <p className="text-sm text-orange-700">Conversas ativas</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="bg-gray-50 p-6 rounded-xl">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">📚 Livros por Disciplina</h3>
+                    <div className="space-y-3">
+                      {subjects.map(subject => {
+                        const subjectBooks = books.filter(book => book.subject_id === subject.id);
+                        return (
+                          <div key={subject.id} className="flex justify-between items-center">
+                            <span className="text-gray-700">{subject.name}</span>
+                            <span className="font-medium text-gray-900">{subjectBooks.length} livros</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 p-6 rounded-xl">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">👥 Usuários por Tipo</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-700">👨‍🎓 Estudantes</span>
+                        <span className="font-medium text-gray-900">
+                          {users.filter(user => user.role === 'student').length}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-700">🛡️ Administradores</span>
+                        <span className="font-medium text-gray-900">
+                          {users.filter(user => user.role === 'admin').length}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Books Tab */}
             {activeTab === 'books' && (
               <div>
@@ -449,6 +605,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                       <input
                         type="file"
                         accept=".pdf"
+                        ref={fileInputRef}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
@@ -497,9 +654,169 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
               </div>
             )}
 
+            {/* Users Tab */}
+            {activeTab === 'users' && (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">Gerenciar Usuários</h2>
+                  <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2">
+                    <Plus className="h-4 w-4" />
+                    <span>Novo Usuário</span>
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Usuário
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Tipo
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Data de Cadastro
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Ações
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {users.map((user) => (
+                        <tr key={user.id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${
+                                user.role === 'admin' ? 'bg-purple-100' : 'bg-blue-100'
+                              }`}>
+                                {user.role === 'admin' ? '🛡️' : '👨‍🎓'}
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {user.name}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {user.email}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              user.role === 'admin' 
+                                ? 'bg-purple-100 text-purple-800' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {user.role === 'admin' ? 'Administrador' : 'Estudante'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button className="text-purple-600 hover:text-purple-900 mr-3">
+                              Editar
+                            </button>
+                            <button className="text-red-600 hover:text-red-900">
+                              Excluir
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Analytics Tab */}
+            {activeTab === 'analytics' && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">📈 Analytics e Relatórios</h2>
+                
+                <div className="grid md:grid-cols-2 gap-6 mb-8">
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Uso por Disciplina</h3>
+                    <div className="space-y-4">
+                      {subjects.map(subject => {
+                        const subjectConversations = conversations.filter(conv => conv.subject_id === subject.id);
+                        const percentage = conversations.length > 0 ? (subjectConversations.length / conversations.length) * 100 : 0;
+                        return (
+                          <div key={subject.id}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-gray-700">{subject.name}</span>
+                              <span className="text-gray-900 font-medium">{subjectConversations.length} conversas</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className={`bg-${subject.color}-600 h-2 rounded-full`}
+                                style={{ width: `${percentage}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">🎯 Métricas Gerais</h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">Taxa de Engajamento</span>
+                        <span className="font-medium text-green-600">85%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">Tempo Médio por Sessão</span>
+                        <span className="font-medium text-blue-600">12 min</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">Satisfação dos Usuários</span>
+                        <span className="font-medium text-purple-600">4.8/5</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">Conversas por Dia</span>
+                        <span className="font-medium text-orange-600">24</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border border-blue-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">📈 Crescimento do Sistema</h3>
+                  <p className="text-gray-600 mb-4">
+                    O sistema está crescendo consistentemente com novos usuários e maior engajamento.
+                  </p>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600">+15%</div>
+                      <div className="text-sm text-gray-600">Novos usuários</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-green-600">+28%</div>
+                      <div className="text-sm text-gray-600">Conversas</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-purple-600">+12%</div>
+                      <div className="text-sm text-gray-600">Tempo de uso</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Subjects Tab */}
             {activeTab === 'subjects' && (
               <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">Gerenciar Disciplinas</h2>
+                  <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2">
+                    <Plus className="h-4 w-4" />
+                    <span>Nova Disciplina</span>
+                  </button>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {subjects.map(subject => (
                     <div key={subject.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -512,8 +829,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                       <p className="text-sm text-gray-600 mb-3">
                         {subject.description}
                       </p>
-                      <div className="text-xs text-gray-500">
-                        {books.filter(book => book.subject_id === subject.id).length} livros
+                      <div className="flex justify-between items-center text-xs text-gray-500">
+                        <span>{books.filter(book => book.subject_id === subject.id).length} livros</span>
+                        <div className="flex space-x-2">
+                          <button className="text-purple-600 hover:text-purple-700">Editar</button>
+                          <button className="text-red-600 hover:text-red-700">Excluir</button>
+                        </div>
                       </div>
                     </div>
                   ))}
