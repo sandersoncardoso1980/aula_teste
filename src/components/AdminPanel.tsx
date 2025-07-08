@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Upload, BookOpen, FileText, Trash2, Download, Search, Filter, Plus, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { Subject, Book } from '../types';
-import { supabase } from '../lib/supabase';
+import { supabase, getSupabaseStatus } from '../lib/supabase';
 
 interface AdminPanelProps {
   onBack: () => void;
@@ -33,6 +33,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   const loadData = async () => {
     setLoading(true);
     try {
+      // Check if Supabase is configured
+      const supabaseStatus = getSupabaseStatus();
+      if (!supabaseStatus.isConfigured) {
+        throw new Error('Supabase não está configurado');
+      }
+
       // Load subjects
       const { data: subjectsData, error: subjectsError } = await supabase
         .from('subjects')

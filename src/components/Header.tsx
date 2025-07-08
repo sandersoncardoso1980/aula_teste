@@ -66,7 +66,7 @@ const Header: React.FC<HeaderProps> = ({ onAuthClick, onAdminClick }) => {
                   )}
                 </span>
                 
-                {isAdmin && (
+                {isAdmin && onAdminClick && (
                   <button
                     onClick={onAdminClick}
                     className="flex items-center space-x-1 px-3 py-2 rounded-lg text-purple-600 hover:bg-purple-50 transition-colors"

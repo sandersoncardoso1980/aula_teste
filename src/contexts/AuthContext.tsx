@@ -28,6 +28,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadUserProfile = async (userId: string) => {
     try {
+      // Check if Supabase is configured first
+      const supabaseStatus = getSupabaseStatus();
+      if (!supabaseStatus.isConfigured) {
+        return null;
+      }
+
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -35,6 +41,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
+        // If profile doesn't exist, that's okay - user might not have one yet
+        if (error.code === 'PGRST116') {
+          console.log('No profile found for user, this is normal for new users');
+          return null;
+        }
         console.error('Error loading user profile:', error);
         return null;
       }
@@ -59,8 +70,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getCurrentUser().then(async (user) => {
       setUser(user as User);
       if (user) {
-        const profile = await loadUserProfile(user.id);
-        setUserProfile(profile);
+        try {
+          const profile = await loadUserProfile(user.id);
+          setUserProfile(profile);
+        } catch (error) {
+          console.error('Error loading profile:', error);
+          // Continue without profile - don't block the app
+          setUserProfile(null);
+        }
       }
       setLoading(false);
     }).catch((error) => {
@@ -75,8 +92,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (session?.user) {
           setUser(session.user as User);
-          const profile = await loadUserProfile(session.user.id);
-          setUserProfile(profile);
+          try {
+            const profile = await loadUserProfile(session.user.id);
+            setUserProfile(profile);
+          } catch (error) {
+            console.error('Error loading profile:', error);
+            setUserProfile(null);
+          }
         } else {
           setUser(null);
           setUserProfile(null);
