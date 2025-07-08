@@ -259,27 +259,3 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 };
 
 export default AuthModal;
-          </p>
-          {!supabaseStatus.isConfigured && (
-            <p className="text-xs text-amber-600 mt-2">
-              * Configure o Supabase primeiro para usar as credenciais de teste
-            </p>
-          )}
-        </div>
-
-        {/* Configuration Status */}
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-          <p className="text-xs text-gray-500 mb-1">Status da configuração:</p>
-          <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${supabaseStatus.isConfigured ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <span className="text-xs text-gray-600">
-              {supabaseStatus.isConfigured ? 'Supabase configurado' : 'Supabase não configurado'}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default AuthModal;
