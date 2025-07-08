@@ -7,6 +7,14 @@ export interface User {
   created_at: string;
 }
 
+export interface Profile {
+  id: string;
+  name: string;
+  role: 'student' | 'admin';
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Subject {
   id: string;
   name: string;

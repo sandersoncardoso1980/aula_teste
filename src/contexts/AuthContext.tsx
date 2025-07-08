@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, getCurrentUser, getSupabaseStatus } from '../lib/supabase';
-import { User } from '../types';
+import { User, Profile } from '../types';
 
 interface AuthContextType {
   user: User | null;
+  userProfile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<any>;
   signUp: (email: string, password: string, name: string) => Promise<any>;
@@ -22,7 +23,28 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const loadUserProfile = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error loading user profile:', error);
+        return null;
+      }
+
+      return profile;
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     // Check if Supabase is configured
@@ -34,8 +56,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Get initial user
-    getCurrentUser().then((user) => {
+    getCurrentUser().then(async (user) => {
       setUser(user as User);
+      if (user) {
+        const profile = await loadUserProfile(user.id);
+        setUserProfile(profile);
+      }
       setLoading(false);
     }).catch((error) => {
       console.error('Error getting initial user:', error);
@@ -49,8 +75,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (session?.user) {
           setUser(session.user as User);
+          const profile = await loadUserProfile(session.user.id);
+          setUserProfile(profile);
         } else {
           setUser(null);
+          setUserProfile(null);
         }
         setLoading(false);
       }
@@ -129,6 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await supabase.auth.signOut();
       setUser(null);
+      setUserProfile(null);
     } catch (err) {
       console.error('Sign out error:', err);
     }
@@ -136,6 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value = {
     user,
+    userProfile,
     loading,
     signIn,
     signUp,

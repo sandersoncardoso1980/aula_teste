@@ -199,7 +199,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         <div className="mt-6 p-4 bg-gray-50 rounded-lg">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-gray-600 font-medium">
-              Conta de demonstração:
+              Contas de demonstração:
             </p>
             <button
               onClick={fillDemoCredentials}
@@ -209,9 +209,56 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               Preencher
             </button>
           </div>
-          <p className="text-sm text-gray-600">
-            Email: aluno@teste.com<br />
-            Senha: senha123
+          <div className="space-y-2 text-sm text-gray-600">
+            <div>
+              <strong>👨‍🎓 Aluno:</strong><br />
+              Email: aluno@teste.com<br />
+              Senha: senha123
+            </div>
+            <div>
+              <strong>🛡️ Admin:</strong><br />
+              Email: admin@teste.com<br />
+              Senha: admin123
+            </div>
+          </div>
+          {!supabaseStatus.isConfigured && (
+            <p className="text-xs text-amber-600 mt-2">
+              * Configure o Supabase primeiro para usar as credenciais de teste
+            </p>
+          )}
+        </div>
+
+        {/* Admin Demo Button */}
+        <div className="mt-4">
+          <button
+            onClick={() => {
+              setEmail('admin@teste.com');
+              setPassword('admin123');
+              setIsLogin(true);
+            }}
+            disabled={!supabaseStatus.isConfigured}
+            className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          >
+            🛡️ Entrar como Administrador
+          </button>
+        </div>
+
+        {/* Configuration Status */}
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          <p className="text-xs text-gray-500 mb-1">Status da configuração:</p>
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${supabaseStatus.isConfigured ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-xs text-gray-600">
+              {supabaseStatus.isConfigured ? 'Supabase configurado' : 'Supabase não configurado'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AuthModal;
           </p>
           {!supabaseStatus.isConfigured && (
             <p className="text-xs text-amber-600 mt-2">

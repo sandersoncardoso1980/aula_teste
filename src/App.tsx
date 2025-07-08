@@ -6,10 +6,12 @@ import SubjectsSection from './components/SubjectsSection';
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
 import Dashboard from './components/Dashboard';
+import AdminPanel from './components/AdminPanel';
 
 const AppContent: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const { user, loading } = useAuth();
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const { user, userProfile, loading } = useAuth();
 
   if (loading) {
     return (
@@ -22,13 +24,21 @@ const AppContent: React.FC = () => {
     );
   }
 
+  // Show admin panel if requested
+  if (showAdminPanel && userProfile?.role === 'admin') {
+    return <AdminPanel onBack={() => setShowAdminPanel(false)} />;
+  }
+
   if (user) {
     return <Dashboard />;
   }
 
   return (
     <div className="min-h-screen bg-white">
-      <Header onAuthClick={() => setIsAuthModalOpen(true)} />
+      <Header 
+        onAuthClick={() => setIsAuthModalOpen(true)}
+        onAdminClick={() => setShowAdminPanel(true)}
+      />
       <Hero onGetStarted={() => setIsAuthModalOpen(true)} />
       <SubjectsSection />
       <Footer />
