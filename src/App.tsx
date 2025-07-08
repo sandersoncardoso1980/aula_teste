@@ -13,6 +13,14 @@ const AppContent: React.FC = () => {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const { user, userProfile, loading } = useAuth();
 
+  console.log('🎯 App render state:', { 
+    hasUser: !!user, 
+    hasProfile: !!userProfile, 
+    loading,
+    userEmail: user?.email,
+    userRole: userProfile?.role 
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -20,6 +28,9 @@ const AppContent: React.FC = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Carregando aplicação...</p>
           <p className="mt-2 text-sm text-gray-500">Inicializando sistema de autenticação</p>
+          <div className="mt-4 text-xs text-gray-400">
+            Se esta tela persistir, verifique o console do navegador (F12)
+          </div>
         </div>
       </div>
     );

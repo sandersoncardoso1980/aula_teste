@@ -6,9 +6,19 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
 
 // Check if Supabase is properly configured
 const isSupabaseConfigured = () => {
-  return supabaseUrl !== 'https://placeholder.supabase.co' && 
+  const isConfigured = supabaseUrl !== 'https://placeholder.supabase.co' && 
          supabaseKey !== 'placeholder-key' &&
-         supabaseUrl.includes('supabase.co');
+         supabaseUrl.includes('supabase.co') &&
+         supabaseUrl.length > 30 &&
+         supabaseKey.length > 30;
+  
+  console.log('🔍 Supabase configuration check:', {
+    url: supabaseUrl.substring(0, 30) + '...',
+    keyLength: supabaseKey.length,
+    isConfigured
+  });
+  
+  return isConfigured;
 };
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
@@ -79,24 +89,35 @@ export const signOut = async () => {
 
 export const getCurrentUser = async () => {
   if (!isSupabaseConfigured()) {
-    console.log('Supabase not configured, returning null user');
+    console.log('⚠️ Supabase not configured, returning null user');
     return null;
   }
 
   try {
-    console.log('Getting current user from Supabase...');
-    const { data: { user } } = await supabase.auth.getUser();
-    console.log('Current user result:', user ? 'User found' : 'No user');
+    console.log('🔍 Getting current user from Supabase...');
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error) {
+      console.error('❌ Error getting user:', error);
+      return null;
+    }
+    
+    console.log('👤 Current user result:', user ? `User found: ${user.email}` : 'No user');
     return user;
   } catch (err) {
-    console.error('Error getting current user:', err);
+    console.error('❌ Exception getting current user:', err);
     return null;
   }
 };
 
 // Export configuration status for UI feedback
-export const getSupabaseStatus = () => ({
-  isConfigured: isSupabaseConfigured(),
-  url: supabaseUrl,
-  hasValidKey: supabaseKey !== 'placeholder-key'
-});
+export const getSupabaseStatus = () => {
+  const isConfigured = isSupabaseConfigured();
+  return {
+    isConfigured,
+    url: supabaseUrl,
+    hasValidKey: supabaseKey !== 'placeholder-key',
+    urlLength: supabaseUrl.length,
+    keyLength: supabaseKey.length
+  };
+};

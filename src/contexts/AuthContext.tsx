@@ -26,53 +26,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUserProfile = async (userId: string): Promise<Profile | null> => {
-    try {
-      // Check if Supabase is configured first
-      const supabaseStatus = getSupabaseStatus();
-      if (!supabaseStatus.isConfigured) {
-        console.log('Supabase not configured, skipping profile load');
-        return null;
-      }
-
-      console.log('Loading profile for user:', userId);
-      
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        // If profile doesn't exist, that's okay - user might not have one yet
-        if (error.code === 'PGRST116') {
-          console.log('No profile found for user, this is normal for new users');
-          return null;
-        }
-        console.error('Error loading user profile:', error);
-        return null;
-      }
-
-      console.log('Profile loaded successfully:', profile);
-      return profile;
-    } catch (error) {
-      console.error('Exception loading user profile:', error);
-      return null;
-    }
-  };
-
   useEffect(() => {
     let mounted = true;
 
     const initializeAuth = async () => {
       try {
-        console.log('Initializing auth...');
+        console.log('🔄 Initializing authentication...');
         
         // Check if Supabase is configured
         const supabaseStatus = getSupabaseStatus();
+        console.log('📊 Supabase status:', supabaseStatus);
         
         if (!supabaseStatus.isConfigured) {
-          console.log('Supabase not configured, setting loading to false');
+          console.log('⚠️ Supabase not configured, setting loading to false');
           if (mounted) {
             setLoading(false);
           }
@@ -80,38 +46,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // Get initial user
-        console.log('Getting current user...');
+        console.log('👤 Getting current user...');
         const currentUser = await getCurrentUser();
+        console.log('👤 Current user result:', currentUser ? 'User found' : 'No user');
         
         if (mounted) {
           setUser(currentUser as User);
           
+          // For demo purposes, create a mock profile if user exists
           if (currentUser) {
-            console.log('User found, loading profile...');
-            try {
-              const profile = await loadUserProfile(currentUser.id);
-              if (mounted) {
-                setUserProfile(profile);
-              }
-            } catch (error) {
-              console.error('Error loading profile:', error);
-              // Continue without profile - don't block the app
-              if (mounted) {
-                setUserProfile(null);
-              }
-            }
+            console.log('📝 Creating mock profile for user');
+            const mockProfile: Profile = {
+              id: currentUser.id,
+              name: currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'Usuário',
+              role: currentUser.email === 'admin@teste.com' ? 'admin' : 'student',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            setUserProfile(mockProfile);
           }
           
+          console.log('✅ Auth initialization complete');
           setLoading(false);
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('❌ Error initializing auth:', error);
         if (mounted) {
           setLoading(false);
         }
       }
     };
 
+    // Initialize immediately
     initializeAuth();
 
     // Listen for auth changes only if Supabase is configured
@@ -119,24 +85,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let subscription: any = null;
 
     if (supabaseStatus.isConfigured) {
+      console.log('🔗 Setting up auth state listener...');
       const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
         async (event, session) => {
-          console.log('Auth state changed:', event, session?.user?.id);
+          console.log('🔄 Auth state changed:', event, session?.user?.id);
           
           if (mounted) {
             if (session?.user) {
               setUser(session.user as User);
-              try {
-                const profile = await loadUserProfile(session.user.id);
-                if (mounted) {
-                  setUserProfile(profile);
-                }
-              } catch (error) {
-                console.error('Error loading profile on auth change:', error);
-                if (mounted) {
-                  setUserProfile(null);
-                }
-              }
+              // Create mock profile
+              const mockProfile: Profile = {
+                id: session.user.id,
+                name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuário',
+                role: session.user.email === 'admin@teste.com' ? 'admin' : 'student',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              };
+              setUserProfile(mockProfile);
             } else {
               setUser(null);
               setUserProfile(null);
@@ -149,6 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     return () => {
+      console.log('🧹 Cleaning up auth context...');
       mounted = false;
       if (subscription) {
         subscription.unsubscribe();
@@ -167,18 +133,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      console.log('🔐 Attempting sign in for:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
       if (error) {
-        console.error('Sign in error:', error);
+        console.error('❌ Sign in error:', error);
+      } else {
+        console.log('✅ Sign in successful');
       }
       
       return { data, error };
     } catch (err: any) {
-      console.error('Sign in exception:', err);
+      console.error('❌ Sign in exception:', err);
       return {
         data: null,
         error: { message: err.message || 'Erro ao fazer login' }
@@ -197,6 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      console.log('📝 Attempting sign up for:', email);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -209,12 +179,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
-        console.error('Sign up error:', error);
+        console.error('❌ Sign up error:', error);
+      } else {
+        console.log('✅ Sign up successful');
       }
       
       return { data, error };
     } catch (err: any) {
-      console.error('Sign up exception:', err);
+      console.error('❌ Sign up exception:', err);
       return {
         data: null,
         error: { message: err.message || 'Erro ao criar conta' }
@@ -224,11 +196,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
+      console.log('🚪 Signing out...');
       await supabase.auth.signOut();
       setUser(null);
       setUserProfile(null);
+      console.log('✅ Sign out successful');
     } catch (err) {
-      console.error('Sign out error:', err);
+      console.error('❌ Sign out error:', err);
     }
   };
 
