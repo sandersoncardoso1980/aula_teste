@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MessageSquare, Clock, ArrowRight, BookOpen, Brain, Target } from 'lucide-react';
+import { Plus, MessageSquare, Clock, ArrowRight, BookOpen, Brain, Target, Settings, User, LogOut, Shield } from 'lucide-react';
 import { Subject, Conversation, UserProgress, LearningStyle, KnowledgeLevel, AssessmentResult } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 import SubjectCard from './SubjectCard';
 import ChatInterface from './ChatInterface';
 import DiagnosticAssessment from './DiagnosticAssessment';
 import ProgressDashboard from './ProgressDashboard';
+import AdminPanel from './AdminPanel';
 
 const mockSubjects: Subject[] = [
   {
@@ -118,12 +120,16 @@ const mockKnowledgeLevel: KnowledgeLevel = {
 const Dashboard: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [showAssessment, setShowAssessment] = useState<Subject | null>(null);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
   const [subjects] = useState<Subject[]>(mockSubjects);
   const [userProgress, setUserProgress] = useState<Record<string, UserProgress>>({});
   const [learningStyles, setLearningStyles] = useState<Record<string, LearningStyle>>({});
   const [knowledgeLevels, setKnowledgeLevels] = useState<Record<string, KnowledgeLevel>>({});
   const [showProgressDashboard, setShowProgressDashboard] = useState<string | null>(null);
+  
+  const { user, userProfile, signOut } = useAuth();
 
   // Initialize mock data
   useEffect(() => {
@@ -196,7 +202,23 @@ const Dashboard: React.FC = () => {
   const handleBackToDashboard = () => {
     setSelectedSubject(null);
     setShowProgressDashboard(null);
+    setShowAdminPanel(false);
   };
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  const handleSwitchUser = () => {
+    window.location.reload();
+  };
+
+  const isAdmin = userProfile?.role === 'admin';
+
+  // Show admin panel if requested
+  if (showAdminPanel && isAdmin) {
+    return <AdminPanel onBack={handleBackToDashboard} />;
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
@@ -262,16 +284,136 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Top Navigation Bar */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <div className="flex items-center space-x-2">
+              <div className="bg-blue-600 p-2 rounded-lg">
+                <BookOpen className="h-6 w-6 text-white" />
+              </div>
+              <h1 className="text-xl font-bold text-gray-900">AI Tutors</h1>
+            </div>
+
+            {/* User Menu */}
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">
+                Olá, {userProfile?.name || user?.user_metadata?.name || user?.email?.split('@')[0]}
+                {isAdmin && (
+                  <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                    Admin
+                  </span>
+                )}
+              </span>
+              
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center space-x-1 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:inline">Conta</span>
+                </button>
+                
+                {/* Dropdown Menu */}
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                    <div className="py-2">
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <p className="text-sm font-medium text-gray-900">
+                          {userProfile?.name || user?.user_metadata?.name || 'Usuário'}
+                        </p>
+                        <p className="text-xs text-gray-500">{user?.email}</p>
+                        <p className="text-xs text-blue-600 mt-1">
+                          {isAdmin ? '🛡️ Administrador' : '👨‍🎓 Estudante'}
+                        </p>
+                      </div>
+                      
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            setShowAdminPanel(true);
+                            setShowUserMenu(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 flex items-center space-x-2"
+                        >
+                          <Shield className="h-4 w-4" />
+                          <span>Painel Admin</span>
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => {
+                          handleSwitchUser();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span>Trocar Usuário</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          handleSignOut();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Sair</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            🎓 Bem-vindo ao AI Tutors
+            🎓 Bem-vindo ao AI Tutors{isAdmin ? ' - Painel Administrativo' : ''}
           </h1>
           <p className="text-gray-600">
-            Escolha uma disciplina para começar a estudar com seu professor particular de IA personalizado
+            {isAdmin 
+              ? 'Gerencie o sistema e escolha uma disciplina para estudar'
+              : 'Escolha uma disciplina para começar a estudar com seu professor particular de IA personalizado'
+            }
           </p>
         </div>
+
+        {/* Admin Quick Actions */}
+        {isAdmin && (
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-2xl p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="bg-purple-100 p-3 rounded-lg">
+                  <Shield className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-purple-900">
+                    🛡️ Ferramentas de Administrador
+                  </h3>
+                  <p className="text-purple-700">
+                    Gerencie livros, disciplinas e conteúdo do sistema
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAdminPanel(true)}
+                className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors flex items-center space-x-2"
+              >
+                <Shield className="h-5 w-5" />
+                <span>Abrir Painel Admin</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -328,7 +470,18 @@ const Dashboard: React.FC = () => {
 
         {/* Subjects Grid */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Escolha uma Disciplina</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Escolha uma Disciplina</h2>
+            {isAdmin && (
+              <button
+                onClick={() => setShowAdminPanel(true)}
+                className="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center space-x-1"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Gerenciar Disciplinas</span>
+              </button>
+            )}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {subjects.map((subject) => {
               const hasAssessment = learningStyles[subject.id] && knowledgeLevels[subject.id];
@@ -408,6 +561,14 @@ const Dashboard: React.FC = () => {
           </div>
         )}
       </div>
+      
+      {/* Click outside to close user menu */}
+      {showUserMenu && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowUserMenu(false)}
+        ></div>
+      )}
     </div>
   );
 };

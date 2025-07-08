@@ -53,8 +53,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   };
 
   const fillDemoCredentials = () => {
-    setEmail('aluno@teste.com');
-    setPassword('senha123');
+    if (isLogin) {
+      setEmail('aluno@teste.com');
+      setPassword('senha123');
+    } else {
+      setEmail('admin@teste.com');
+      setPassword('admin123');
+    }
     setIsLogin(true);
   };
 
@@ -201,13 +206,30 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <p className="text-sm text-gray-600 font-medium">
               Contas de demonstração:
             </p>
-            <button
-              onClick={fillDemoCredentials}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-              disabled={!supabaseStatus.isConfigured}
-            >
-              Preencher
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => {
+                  setEmail('aluno@teste.com');
+                  setPassword('senha123');
+                  setIsLogin(true);
+                }}
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                disabled={!supabaseStatus.isConfigured}
+              >
+                Aluno
+              </button>
+              <button
+                onClick={() => {
+                  setEmail('admin@teste.com');
+                  setPassword('admin123');
+                  setIsLogin(true);
+                }}
+                className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                disabled={!supabaseStatus.isConfigured}
+              >
+                Admin
+              </button>
+            </div>
           </div>
           <div className="space-y-2 text-sm text-gray-600">
             <div>
@@ -220,6 +242,22 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               Email: admin@teste.com<br />
               Senha: admin123
             </div>
+          </div>
+          {!supabaseStatus.isConfigured && (
+            <p className="text-xs text-amber-600 mt-2">
+              * Configure o Supabase primeiro para usar as credenciais de teste
+            </p>
+          )}
+        </div>
+
+        {/* Configuration Status */}
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          <p className="text-xs text-gray-500 mb-1">Status da configuração:</p>
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${supabaseStatus.isConfigured ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-xs text-gray-600">
+              {supabaseStatus.isConfigured ? 'Supabase configurado' : 'Supabase não configurado'}
+            </span>
           </div>
         </div>
       </div>
