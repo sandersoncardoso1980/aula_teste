@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MessageSquare, Clock, ArrowRight, BookOpen, Brain, Target, Settings, User, LogOut, Shield } from 'lucide-react';
+import { Plus, MessageSquare, Clock, ArrowRight, BookOpen, Brain, Target, Settings, User, LogOut, Shield, Bell, Search, Calendar, Award, TrendingUp, BarChart3, Users, Zap } from 'lucide-react';
 import { Subject, Conversation, UserProgress, LearningStyle, KnowledgeLevel, AssessmentResult } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import SubjectCard from './SubjectCard';
@@ -7,6 +7,9 @@ import ChatInterface from './ChatInterface';
 import DiagnosticAssessment from './DiagnosticAssessment';
 import ProgressDashboard from './ProgressDashboard';
 import AdminPanel from './AdminPanel';
+import NotificationCenter from './NotificationCenter';
+import ConversationHistory from './ConversationHistory';
+import SubjectContent from './SubjectContent';
 
 const mockSubjects: Subject[] = [
   {
@@ -128,6 +131,36 @@ const Dashboard: React.FC = () => {
   const [learningStyles, setLearningStyles] = useState<Record<string, LearningStyle>>({});
   const [knowledgeLevels, setKnowledgeLevels] = useState<Record<string, KnowledgeLevel>>({});
   const [showProgressDashboard, setShowProgressDashboard] = useState<string | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showConversationHistory, setShowConversationHistory] = useState(false);
+  const [showSubjectContent, setShowSubjectContent] = useState<Subject | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [notifications, setNotifications] = useState([
+    {
+      id: '1',
+      title: '🎯 Nova conquista desbloqueada!',
+      message: 'Você completou 5 dias consecutivos de estudo em Matemática',
+      type: 'achievement',
+      read: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: '2',
+      title: '📚 Novo conteúdo disponível',
+      message: 'Adicionamos novos exercícios de Física - Mecânica',
+      type: 'content',
+      read: false,
+      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: '3',
+      title: '⏰ Lembrete de estudo',
+      message: 'Que tal continuar seus estudos de Química hoje?',
+      type: 'reminder',
+      read: true,
+      created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    }
+  ]);
   
   const { user, userProfile, signOut } = useAuth();
 
@@ -269,6 +302,41 @@ const Dashboard: React.FC = () => {
     );
   }
 
+  // Show conversation history if selected
+  if (showConversationHistory) {
+    return (
+      <ConversationHistory
+        conversations={conversations}
+        subjects={subjects}
+        onBack={handleBackToDashboard}
+        onSelectConversation={(conversation) => {
+          const subject = subjects.find(s => s.id === conversation.subject_id);
+          if (subject) {
+            setSelectedSubject(subject);
+            setShowConversationHistory(false);
+          }
+        }}
+      />
+    );
+  }
+
+  // Show subject content if selected
+  if (showSubjectContent) {
+    return (
+      <SubjectContent
+        subject={showSubjectContent}
+        onBack={handleBackToDashboard}
+        onStartChat={() => {
+          setSelectedSubject(showSubjectContent);
+          setShowSubjectContent(null);
+        }}
+        progress={userProgress[showSubjectContent.id]}
+        learningStyle={learningStyles[showSubjectContent.id]}
+        knowledgeLevel={knowledgeLevels[showSubjectContent.id]}
+      />
+    );
+  }
+
   // Show chat interface if subject is selected
   if (selectedSubject) {
     return (
@@ -298,6 +366,45 @@ const Dashboard: React.FC = () => {
 
             {/* User Menu */}
             <div className="flex items-center space-x-4">
+              {/* Search */}
+              <div className="relative hidden md:block">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar disciplinas, conversas..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                />
+              </div>
+
+              {/* Notifications */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors relative"
+                >
+                  <Bell className="h-5 w-5" />
+                  {notifications.filter(n => !n.read).length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {notifications.filter(n => !n.read).length}
+                    </span>
+                  )}
+                </button>
+                
+                {showNotifications && (
+                  <NotificationCenter
+                    notifications={notifications}
+                    onClose={() => setShowNotifications(false)}
+                    onMarkAsRead={(id) => {
+                      setNotifications(prev => prev.map(n => 
+                        n.id === id ? { ...n, read: true } : n
+                      ));
+                    }}
+                  />
+                )}
+              </div>
+
               <span className="text-sm text-gray-600">
                 Olá, {userProfile?.name || user?.user_metadata?.name || user?.email?.split('@')[0]}
                 {isAdmin && (
@@ -444,13 +551,13 @@ const Dashboard: React.FC = () => {
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div className="flex items-center">
               <div className="bg-purple-100 p-3 rounded-lg">
-                <Brain className="h-6 w-6 text-purple-600" />
+                <Award className="h-6 w-6 text-purple-600" />
               </div>
               <div className="ml-4">
                 <p className="text-2xl font-bold text-gray-900">
-                  {Object.keys(learningStyles).length}
+                  {Object.values(userProgress).reduce((acc, p) => acc + p.achievements.length, 0)}
                 </p>
-                <p className="text-gray-600">Avaliações</p>
+                <p className="text-gray-600">Conquistas</p>
               </div>
             </div>
           </div>
@@ -458,29 +565,88 @@ const Dashboard: React.FC = () => {
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div className="flex items-center">
               <div className="bg-orange-100 p-3 rounded-lg">
-                <Clock className="h-6 w-6 text-orange-600" />
+                <TrendingUp className="h-6 w-6 text-orange-600" />
               </div>
               <div className="ml-4">
-                <p className="text-2xl font-bold text-gray-900">24/7</p>
-                <p className="text-gray-600">Disponível</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {Math.max(...Object.values(userProgress).map(p => p.learning_streak))}
+                </p>
+                <p className="text-gray-600">Dias Sequência</p>
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <button
+            onClick={() => setShowConversationHistory(true)}
+            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-2xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 text-left"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <MessageSquare className="h-8 w-8" />
+              <ArrowRight className="h-5 w-5" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">📚 Histórico de Conversas</h3>
+            <p className="text-blue-100 text-sm">
+              Revise suas conversas anteriores e continue de onde parou
+            </p>
+          </button>
+
+          <button
+            onClick={() => {
+              const mathSubject = subjects.find(s => s.name === 'Matemática');
+              if (mathSubject) setShowSubjectContent(mathSubject);
+            }}
+            className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-2xl hover:from-green-600 hover:to-green-700 transition-all duration-200 text-left"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <BookOpen className="h-8 w-8" />
+              <ArrowRight className="h-5 w-5" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">🎯 Explorar Conteúdo</h3>
+            <p className="text-green-100 text-sm">
+              Navegue por tópicos, módulos e recursos de cada disciplina
+            </p>
+          </button>
+
+          <button
+            onClick={() => setShowProgressDashboard(subjects[0]?.id)}
+            className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-2xl hover:from-purple-600 hover:to-purple-700 transition-all duration-200 text-left"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <BarChart3 className="h-8 w-8" />
+              <ArrowRight className="h-5 w-5" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">📊 Meu Progresso</h3>
+            <p className="text-purple-100 text-sm">
+              Acompanhe seu desempenho e conquistas detalhadamente
+            </p>
+          </button>
         </div>
 
         {/* Subjects Grid */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Escolha uma Disciplina</h2>
-            {isAdmin && (
+            <div className="flex items-center space-x-4">
               <button
-                onClick={() => setShowAdminPanel(true)}
-                className="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center space-x-1"
+                onClick={() => setShowSubjectContent(subjects[0])}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center space-x-1"
               >
-                <Plus className="h-4 w-4" />
-                <span>Gerenciar Disciplinas</span>
+                <BookOpen className="h-4 w-4" />
+                <span>Ver Conteúdo</span>
               </button>
-            )}
+              {isAdmin && (
+                <button
+                  onClick={() => setShowAdminPanel(true)}
+                  className="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center space-x-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Gerenciar Disciplinas</span>
+                </button>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {subjects.map((subject) => {
@@ -491,7 +657,7 @@ const Dashboard: React.FC = () => {
                 <div key={subject.id} className="relative">
                   <SubjectCard
                     subject={subject}
-                    onClick={() => handleSubjectSelect(subject)}
+                    onClick={() => setShowSubjectContent(subject)}
                     hasAssessment={hasAssessment}
                     progress={progress}
                   />
@@ -567,6 +733,14 @@ const Dashboard: React.FC = () => {
         <div 
           className="fixed inset-0 z-40" 
           onClick={() => setShowUserMenu(false)}
+        ></div>
+      )}
+      
+      {/* Click outside to close notifications */}
+      {showNotifications && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowNotifications(false)}
         ></div>
       )}
     </div>

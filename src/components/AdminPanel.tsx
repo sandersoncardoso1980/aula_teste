@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Upload, BookOpen, FileText, Trash2, Download, Search, Filter, Plus, AlertCircle, CheckCircle, X, Users, MessageSquare, BarChart3, Settings } from 'lucide-react';
+import { ArrowLeft, Upload, BookOpen, FileText, Trash2, Download, Search, Filter, Plus, AlertCircle, CheckCircle, X, Users, MessageSquare, BarChart3, Settings, Edit, Eye, UserPlus, Mail, Phone, Calendar, TrendingUp, Clock, Award, Zap } from 'lucide-react';
 import { Subject, Book } from '../types';
 import { supabase, getSupabaseStatus } from '../lib/supabase';
 
@@ -53,11 +53,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         ]);
         setUsers([
           { id: '1', email: 'aluno@teste.com', name: 'Aluno Teste', role: 'student', created_at: new Date().toISOString() },
-          { id: '2', email: 'admin@teste.com', name: 'Admin Teste', role: 'admin', created_at: new Date().toISOString() }
+          { id: '2', email: 'admin@teste.com', name: 'Admin Teste', role: 'admin', created_at: new Date().toISOString() },
+          { id: '3', email: 'maria@exemplo.com', name: 'Maria Silva', role: 'student', created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() },
+          { id: '4', email: 'joao@exemplo.com', name: 'João Santos', role: 'student', created_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString() }
         ]);
         setConversations([
           { id: '1', title: 'Derivadas e Integrais', user_id: '1', subject_id: '1', created_at: new Date().toISOString() },
-          { id: '2', title: 'Leis de Newton', user_id: '1', subject_id: '2', created_at: new Date().toISOString() }
+          { id: '2', title: 'Leis de Newton', user_id: '1', subject_id: '2', created_at: new Date().toISOString() },
+          { id: '3', title: 'Química Orgânica', user_id: '3', subject_id: '3', created_at: new Date().toISOString() },
+          { id: '4', title: 'Biologia Celular', user_id: '4', subject_id: '4', created_at: new Date().toISOString() }
         ]);
         setLoading(false);
         return;
@@ -440,6 +444,34 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                     </div>
                   </div>
                 </div>
+
+                {/* Recent Activity */}
+                <div className="mt-8 bg-white p-6 rounded-xl border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 Atividade Recente</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                      <Users className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Novo usuário registrado</p>
+                        <p className="text-xs text-gray-600">maria@exemplo.com se cadastrou há 2 horas</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                      <BookOpen className="h-5 w-5 text-green-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Livro adicionado</p>
+                        <p className="text-xs text-gray-600">"Física Conceitual" foi adicionado à biblioteca</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
+                      <MessageSquare className="h-5 w-5 text-purple-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Alta atividade de conversas</p>
+                        <p className="text-xs text-gray-600">15 novas conversas iniciadas hoje</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -660,11 +692,46 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-semibold text-gray-900">Gerenciar Usuários</h2>
                   <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2">
-                    <Plus className="h-4 w-4" />
+                    <UserPlus className="h-4 w-4" />
                     <span>Novo Usuário</span>
                   </button>
                 </div>
 
+                {/* User Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <Users className="h-6 w-6 text-blue-600" />
+                      <span className="text-xl font-bold text-blue-600">{users.length}</span>
+                    </div>
+                    <p className="text-sm text-blue-700 mt-1">Total de Usuários</p>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <TrendingUp className="h-6 w-6 text-green-600" />
+                      <span className="text-xl font-bold text-green-600">
+                        {users.filter(u => new Date(u.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length}
+                      </span>
+                    </div>
+                    <p className="text-sm text-green-700 mt-1">Novos (7 dias)</p>
+                  </div>
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <Award className="h-6 w-6 text-purple-600" />
+                      <span className="text-xl font-bold text-purple-600">
+                        {users.filter(u => u.role === 'student').length}
+                      </span>
+                    </div>
+                    <p className="text-sm text-purple-700 mt-1">Estudantes Ativos</p>
+                  </div>
+                  <div className="bg-orange-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <Clock className="h-6 w-6 text-orange-600" />
+                      <span className="text-xl font-bold text-orange-600">85%</span>
+                    </div>
+                    <p className="text-sm text-orange-700 mt-1">Taxa de Engajamento</p>
+                  </div>
+                </div>
                 <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -674,6 +741,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Tipo
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Data de Cadastro
@@ -712,11 +782,300 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                               {user.role === 'admin' ? 'Administrador' : 'Estudante'}
                             </span>
                           </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                              Ativo
+                            </span>
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                            <div className="flex items-center">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button className="text-purple-600 hover:text-purple-900 mr-3">
+                            <div className="flex items-center space-x-2">
+                              <button className="text-blue-600 hover:text-blue-900 p-1 rounded" title="Ver detalhes">
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              <button className="text-purple-600 hover:text-purple-900 p-1 rounded" title="Editar">
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button className="text-green-600 hover:text-green-900 p-1 rounded" title="Enviar email">
+                                <Mail className="h-4 w-4" />
+                              </button>
+                              <button className="text-red-600 hover:text-red-900 p-1 rounded" title="Desativar">
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* User Activity Summary */}
+                <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Resumo de Atividade dos Usuários</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {conversations.length}
+                      </div>
+                      <div className="text-sm text-gray-600">Conversas Iniciadas</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {Math.round(conversations.length / users.filter(u => u.role === 'student').length * 10) / 10}
+                      </div>
+                      <div className="text-sm text-gray-600">Média por Aluno</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {users.filter(u => new Date(u.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}
+                      </div>
+                      <div className="text-sm text-gray-600">Novos (30 dias)</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-600">92%</div>
+                      <div className="text-sm text-gray-600">Taxa de Retenção</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Analytics Tab */}
+            {activeTab === 'analytics' && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">📈 Analytics e Relatórios</h2>
+                
+                {/* Key Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-xl text-white">
+                    <div className="flex items-center justify-between mb-2">
+                      <Users className="h-8 w-8" />
+                      <TrendingUp className="h-6 w-6" />
+                    </div>
+                    <div className="text-2xl font-bold">{users.length}</div>
+                    <div className="text-blue-100">Usuários Totais</div>
+                    <div className="text-sm text-blue-200 mt-1">+15% este mês</div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-xl text-white">
+                    <div className="flex items-center justify-between mb-2">
+                      <MessageSquare className="h-8 w-8" />
+                      <TrendingUp className="h-6 w-6" />
+                    </div>
+                    <div className="text-2xl font-bold">{conversations.length}</div>
+                    <div className="text-green-100">Conversas Ativas</div>
+                    <div className="text-sm text-green-200 mt-1">+28% esta semana</div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6 rounded-xl text-white">
+                    <div className="flex items-center justify-between mb-2">
+                      <BookOpen className="h-8 w-8" />
+                      <Zap className="h-6 w-6" />
+                    </div>
+                    <div className="text-2xl font-bold">{books.length}</div>
+                    <div className="text-purple-100">Livros na Biblioteca</div>
+                    <div className="text-sm text-purple-200 mt-1">+3 esta semana</div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6 rounded-xl text-white">
+                    <div className="flex items-center justify-between mb-2">
+                      <Award className="h-8 w-8" />
+                      <TrendingUp className="h-6 w-6" />
+                    </div>
+                    <div className="text-2xl font-bold">4.8</div>
+                    <div className="text-orange-100">Satisfação Média</div>
+                    <div className="text-sm text-orange-200 mt-1">⭐⭐⭐⭐⭐</div>
+                  </div>
+                </div>
+                
+                <div className="grid md:grid-cols-2 gap-6 mb-8">
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Uso por Disciplina</h3>
+                    <div className="space-y-4">
+                      {subjects.map(subject => {
+                        const subjectConversations = conversations.filter(conv => conv.subject_id === subject.id);
+                        const percentage = conversations.length > 0 ? (subjectConversations.length / conversations.length) * 100 : 0;
+                        return (
+                          <div key={subject.id}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-gray-700">{subject.name}</span>
+                              <span className="text-gray-900 font-medium">{subjectConversations.length} conversas</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className={`bg-${subject.color}-600 h-2 rounded-full`}
+                                style={{ width: `${percentage}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">🎯 Métricas de Performance</h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-700">Taxa de Engajamento</span>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-24 bg-gray-200 rounded-full h-2">
+                            <div className="bg-green-600 h-2 rounded-full" style={{ width: '85%' }}></div>
+                          </div>
+                          <span className="font-medium text-green-600">85%</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-700">Tempo Médio por Sessão</span>
+                        <div className="flex items-center space-x-2">
+                          <Clock className="h-4 w-4 text-blue-600" />
+                          <span className="font-medium text-blue-600">12 min</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-700">Taxa de Retenção</span>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-24 bg-gray-200 rounded-full h-2">
+                            <div className="bg-purple-600 h-2 rounded-full" style={{ width: '92%' }}></div>
+                          </div>
+                          <span className="font-medium text-purple-600">92%</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-700">Conversas por Dia</span>
+                        <div className="flex items-center space-x-2">
+                          <MessageSquare className="h-4 w-4 text-orange-600" />
+                          <span className="font-medium text-orange-600">24</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Growth Chart Placeholder */}
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border border-blue-200 mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 Crescimento do Sistema</h3>
+                  <div className="bg-white p-6 rounded-lg">
+                    <div className="text-center text-gray-500 py-12">
+                      <BarChart3 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-medium">Gráfico de Crescimento</p>
+                      <p className="text-sm">Visualização detalhada do crescimento de usuários e engajamento</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 mt-4 text-center">
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600">+15%</div>
+                      <div className="text-sm text-gray-600">Novos usuários</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-green-600">+28%</div>
+                      <div className="text-sm text-gray-600">Conversas</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-purple-600">+12%</div>
+                      <div className="text-sm text-gray-600">Tempo de uso</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* API Usage Monitor */}
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">⚡ Monitoramento de API</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <Zap className="h-5 w-5 text-blue-600" />
+                        <span className="text-sm text-blue-600">Hoje</span>
+                      </div>
+                      <div className="text-xl font-bold text-blue-600">1,247</div>
+                      <div className="text-sm text-blue-700">Tokens usados</div>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <Clock className="h-5 w-5 text-green-600" />
+                        <span className="text-sm text-green-600">Média</span>
+                      </div>
+                      <div className="text-xl font-bold text-green-600">2.3s</div>
+                      <div className="text-sm text-green-700">Tempo resposta</div>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <Award className="h-5 w-5 text-purple-600" />
+                        <span className="text-sm text-purple-600">Taxa</span>
+                      </div>
+                      <div className="text-xl font-bold text-purple-600">99.2%</div>
+                      <div className="text-sm text-purple-700">Sucesso</div>
+                    </div>
+                    <div className="bg-orange-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <TrendingUp className="h-5 w-5 text-orange-600" />
+                        <span className="text-sm text-orange-600">Custo</span>
+                      </div>
+                      <div className="text-xl font-bold text-orange-600">$12.45</div>
+                      <div className="text-sm text-orange-700">Este mês</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Subjects Tab - Enhanced */}
+            {activeTab === 'subjects' && (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">Gerenciar Disciplinas</h2>
+                  <div className="flex items-center space-x-3">
+                    <button className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2">
+                      <Download className="h-4 w-4" />
+                      <span>Exportar</span>
+                    </button>
+                    <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2">
+                      <Plus className="h-4 w-4" />
+                      <span>Nova Disciplina</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Subject Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <Settings className="h-6 w-6 text-blue-600" />
+                      <span className="text-xl font-bold text-blue-600">{subjects.length}</span>
+                    </div>
+                    <p className="text-sm text-blue-700 mt-1">Total de Disciplinas</p>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <BookOpen className="h-6 w-6 text-green-600" />
+                      <span className="text-xl font-bold text-green-600">{books.length}</span>
+                    </div>
+                    <p className="text-sm text-green-700 mt-1">Livros Associados</p>
+                  </div>
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <MessageSquare className="h-6 w-6 text-purple-600" />
+                      <span className="text-xl font-bold text-purple-600">{conversations.length}</span>
+                    </div>
+                    <p className="text-sm text-purple-700 mt-1">Conversas Ativas</p>
+                  </div>
+                  <div className="bg-orange-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <Users className="h-6 w-6 text-orange-600" />
+                      <span className="text-xl font-bold text-orange-600">
+                        {Math.round(conversations.length / subjects.length)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-orange-700 mt-1">Média por Disciplina</p>
+                  </div>
+                </div>
+
                               Editar
                             </button>
                             <button className="text-red-600 hover:text-red-900">
@@ -791,56 +1150,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                   </p>
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <div className="text-2xl font-bold text-blue-600">+15%</div>
-                      <div className="text-sm text-gray-600">Novos usuários</div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-green-600">+28%</div>
-                      <div className="text-sm text-gray-600">Conversas</div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-purple-600">+12%</div>
-                      <div className="text-sm text-gray-600">Tempo de uso</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Subjects Tab */}
-            {activeTab === 'subjects' && (
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">Gerenciar Disciplinas</h2>
-                  <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2">
-                    <Plus className="h-4 w-4" />
-                    <span>Nova Disciplina</span>
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {subjects.map(subject => (
-                    <div key={subject.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className={`bg-${subject.color}-100 p-3 rounded-lg w-fit mb-3`}>
-                        <BookOpen className={`h-6 w-6 text-${subject.color}-600`} />
-                      </div>
-                      <h3 className="font-semibold text-gray-900 mb-2">
-                        {subject.name}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-3">
-                        {subject.description}
-                      </p>
-                      <div className="flex justify-between items-center text-xs text-gray-500">
-                        <span>{books.filter(book => book.subject_id === subject.id).length} livros</span>
-                        <div className="flex space-x-2">
-                          <button className="text-purple-600 hover:text-purple-700">Editar</button>
-                          <button className="text-red-600 hover:text-red-700">Excluir</button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
