@@ -95,13 +95,14 @@ export const getCurrentUser = async () => {
 
   try {
     console.log('🔍 Getting current user from Supabase...');
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    if (error) {
-      console.error('❌ Error getting user:', error);
+    if (sessionError) {
+      console.error('❌ Error getting session:', sessionError);
       return null;
     }
     
+    const user = session?.user || null;
     console.log('👤 Current user result:', user ? `User found: ${user.email}` : 'No user');
     return user;
   } catch (err) {
