@@ -236,6 +236,9 @@ const Dashboard: React.FC = () => {
     setSelectedSubject(null);
     setShowProgressDashboard(null);
     setShowAdminPanel(false);
+    setShowConversationHistory(false);
+    setShowSubjectContent(null);
+    setShowAssessment(null);
   };
 
   const handleSignOut = async () => {
@@ -308,7 +311,7 @@ const Dashboard: React.FC = () => {
       <ConversationHistory
         conversations={conversations}
         subjects={subjects}
-        onBack={handleBackToDashboard}
+        onBack={() => setShowConversationHistory(false)}
         onSelectConversation={(conversation) => {
           const subject = subjects.find(s => s.id === conversation.subject_id);
           if (subject) {
@@ -325,7 +328,7 @@ const Dashboard: React.FC = () => {
     return (
       <SubjectContent
         subject={showSubjectContent}
-        onBack={handleBackToDashboard}
+        onBack={() => setShowSubjectContent(null)}
         onStartChat={() => {
           setSelectedSubject(showSubjectContent);
           setShowSubjectContent(null);

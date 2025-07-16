@@ -69,6 +69,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
             <button
               onClick={onBack}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Voltar ao Dashboard"
             >
               <ArrowLeft className="h-5 w-5 text-gray-600" />
             </button>

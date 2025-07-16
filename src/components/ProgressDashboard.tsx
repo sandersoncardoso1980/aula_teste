@@ -13,7 +13,8 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
   progress, 
   learningStyle, 
   knowledgeLevel, 
-  subjectName 
+  subjectName,
+  onBack
 }) => {
   const getStyleIcon = (style: string) => {
     switch (style) {
