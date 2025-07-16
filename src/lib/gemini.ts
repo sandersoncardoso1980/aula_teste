@@ -142,8 +142,9 @@ IMPORTANTE: Use links REAIS do YouTube que existem e são educativos sobre o tó
 
     // Extract source information from the response
     const sourceMatch = text.match(/\*\*Fonte:\*\*\s*(.+?)\s*-\s*(.+?)$/m);
-    const sourceBook = sourceMatch ? sourceMatch[1].trim() : getRandomBookForSubject(subject);
-    const sourceChapter = sourceMatch ? sourceMatch[2].trim() : `Capítulo ${Math.floor(Math.random() * 15 + 1)}`;
+sourceBook = sourceMatch ? sourceMatch[1].trim() : getRandomBookForSubject(subject);
+sourceChapter = sourceMatch ? sourceMatch[2].trim() : `Capítulo ${Math.floor(Math.random() * 15 + 1)}`;
+
 
     // If no YouTube links were generated, add some based on the subject and question
     const finalYouTubeLinks = youtubeLinks.length > 0 ? youtubeLinks : generateFallbackYouTubeLinks(subject, userMessage);
