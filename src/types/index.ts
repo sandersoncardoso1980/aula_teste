@@ -187,3 +187,11 @@ export interface StudySession {
   understanding_level: number; // 0-100
   engagement_score: number; // 0-100
 }
+
+export interface ProgressDashboardProps {
+  progress: UserProgress;
+  learningStyle: LearningStyle;
+  knowledgeLevel: KnowledgeLevel;
+  subjectName: string;
+  onBack?: () => void;
+}

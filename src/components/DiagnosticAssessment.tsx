@@ -6,9 +6,10 @@ interface DiagnosticAssessmentProps {
   subject: Subject;
   onComplete: (result: AssessmentResult, learningStyle: LearningStyle, knowledgeLevel: KnowledgeLevel) => void;
   onSkip: () => void;
+  onBack?: () => void;
 }
 
-const DiagnosticAssessment: React.FC<DiagnosticAssessmentProps> = ({ subject, onComplete, onSkip }) => {
+const DiagnosticAssessment: React.FC<DiagnosticAssessmentProps> = ({ subject, onComplete, onSkip, onBack }) => {
   const [currentStep, setCurrentStep] = useState<'intro' | 'learning-style' | 'knowledge-test' | 'results'>('intro');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
