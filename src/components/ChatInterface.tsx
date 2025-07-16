@@ -115,7 +115,8 @@ ADAPTE sua resposta para o estilo e nível do aluno!`;
       const geminiResponse = await generateGeminiResponse(
         currentMessage,
         subject.name,
-        enhancedSubjectDescription
+        enhancedSubjectDescription,
+        subject.id // Pass subject ID to fetch books from database
       );
       
       const aiMessage: Message = {

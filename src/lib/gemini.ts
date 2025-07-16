@@ -1,4 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getBooksForSubject, searchRelevantContent, formatBookContentForAI, getSubjectName } from './bookContent';
+import { supabase } from './supabase';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyCzfAqfPO2VWE-1X3LY1A2Xa2kBinZBizk';
 
@@ -17,20 +19,56 @@ export interface GeminiResponse {
 
 /**
  * Generate AI response using Google Gemini with YouTube links and child-friendly explanations
+ * Now integrated with Supabase books database for accurate, subject-specific content
  * @param userMessage - The user's question
  * @param subject - The subject context
  * @param subjectDescription - Description of the subject
+ * @param subjectId - The subject ID to fetch books from database
  * @returns Promise with AI response
  */
 export const generateGeminiResponse = async (
   userMessage: string,
   subject: string,
-  subjectDescription: string
+  subjectDescription: string,
+  subjectId?: string
 ): Promise<GeminiResponse> => {
   try {
     // Validate API key
     if (!API_KEY || API_KEY === 'your-gemini-api-key') {
       throw new Error('API key do Gemini não configurada');
+    }
+
+    // Fetch relevant books from database if subjectId is provided
+    let bookContent = '';
+    let sourceBook = getRandomBookForSubject(subject);
+    let sourceChapter = `Capítulo ${Math.floor(Math.random() * 15 + 1)}`;
+    
+    if (subjectId) {
+      try {
+        console.log(`🔍 Buscando livros para disciplina: ${subject} (ID: ${subjectId})`);
+        
+        // Get books for this subject
+        const books = await getBooksForSubject(subjectId);
+        console.log(`📚 Encontrados ${books.length} livros para ${subject}`);
+        
+        if (books.length > 0) {
+          // Search for relevant content in books
+          const relevantContent = await searchRelevantContent(books, userMessage, subject);
+          console.log(`🎯 Encontrado conteúdo relevante em ${relevantContent.length} livros`);
+          
+          if (relevantContent.length > 0) {
+            bookContent = formatBookContentForAI(relevantContent);
+            // Use the first relevant book as source
+            sourceBook = relevantContent[0].title;
+            sourceChapter = 'Conteúdo relevante encontrado';
+            
+            console.log(`✅ Usando conteúdo do livro: ${sourceBook}`);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Erro ao buscar conteúdo dos livros:', error);
+        // Continue with fallback content
+      }
     }
 
     // Create a comprehensive prompt for the AI tutor with YouTube integration
@@ -39,20 +77,28 @@ Você é um professor particular especializado em ${subject}, muito carinhoso e 
 
 Contexto da disciplina: ${subject} - ${subjectDescription}
 
+${bookContent ? `
+CONTEÚDO ESPECÍFICO DOS LIVROS DA DISCIPLINA:
+${bookContent}
+
+IMPORTANTE: Use EXCLUSIVAMENTE o conteúdo acima dos livros para responder. Baseie sua resposta nos conceitos, definições e exemplos encontrados no material fornecido.
+` : `
 Bibliografia de referência para ${subject}:
 ${getBibliographyForSubject(subject)}
+`}
 
 Pergunta do aluno: "${userMessage}"
 
 INSTRUÇÕES IMPORTANTES:
 1. 🎯 Responda como se estivesse ensinando para uma criança curiosa de 10-15 anos
 2. 🌟 Use linguagem simples, carinhosa e encorajadora
-3. 📚 Base sua resposta em conhecimento acadêmico sólido, mas explique de forma lúdica
+3. 📚 ${bookContent ? 'Base sua resposta EXCLUSIVAMENTE no conteúdo dos livros fornecido acima' : 'Base sua resposta em conhecimento acadêmico sólido'}, mas explique de forma lúdica
 4. 🎬 SEMPRE inclua 2-3 links do YouTube que ensinem o tópico de forma prática e divertida
-5. 📖 Cite uma fonte bibliográfica específica (livro e capítulo) ao final
+5. 📖 ${bookContent ? 'Cite o livro específico usado como fonte' : 'Cite uma fonte bibliográfica específica (livro e capítulo)'} ao final
 6. 💡 Use emojis para tornar a explicação mais visual e divertida
 7. 🎪 Mantenha a resposta entre 200-300 palavras
 8. 🔄 Se a pergunta não for da disciplina, redirecione com carinho para o tema
+${bookContent ? '9. 🎯 CRUCIAL: Responda APENAS com base no conteúdo dos livros fornecido. Não invente informações.' : ''}
 
 FORMATO DA RESPOSTA:
 [Saudação carinhosa com emoji]
@@ -64,7 +110,7 @@ FORMATO DA RESPOSTA:
 • [Título do vídeo 2] - https://youtube.com/watch?v=[ID_REAL]
 • [Título do vídeo 3] - https://youtube.com/watch?v=[ID_REAL]
 
-📚 **Fonte:** [Nome do livro] - [Capítulo específico]
+📚 **Fonte:** ${bookContent ? sourceBook + ' - ' + sourceChapter : '[Nome do livro] - [Capítulo específico]'}
 
 [Pergunta encorajadora para continuar o aprendizado]
 
@@ -112,8 +158,8 @@ IMPORTANTE: Use links REAIS do YouTube que existem e são educativos sobre o tó
 
     return {
       content: cleanContent,
-      sourceBook,
-      sourceChapter,
+      sourceBook: sourceBook,
+      sourceChapter: sourceChapter,
       youtubeLinks: finalYouTubeLinks
     };
   } catch (error: any) {
@@ -137,8 +183,8 @@ IMPORTANTE: Use links REAIS do YouTube que existem e são educativos sobre o tó
       content: errorMessage + '\n\n🎬 **Enquanto isso, que tal assistir esses vídeos?**\n' + 
                fallbackLinks.map(link => `• ${link}`).join('\n') + 
                '\n\n💪 Não desista! Aprender é uma aventura incrível!',
-      sourceBook: getRandomBookForSubject(subject),
-      sourceChapter: `Capítulo ${Math.floor(Math.random() * 15 + 1)}`,
+      sourceBook: sourceBook,
+      sourceChapter: sourceChapter,
       youtubeLinks: fallbackLinks
     };
   }

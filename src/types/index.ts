@@ -30,7 +30,7 @@ export interface Book {
   title: string;
   author: string;
   subject_id: string;
-  file_path: string;
+  file_path?: string;
   created_at: string;
 }
 
