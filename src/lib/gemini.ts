@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getBooksForSubject, searchRelevantContent, formatBookContentForAI, getSubjectName } from './bookContent';
 import { supabase } from './supabase';
+import { searchEducationalGifs, checkGifUsageLimit, updateGifUsage, TenorGif } from './tenorApi';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyCzfAqfPO2VWE-1X3LY1A2Xa2kBinZBizk';
 
@@ -15,6 +16,12 @@ export interface GeminiResponse {
   sourceBook?: string;
   sourceChapter?: string;
   youtubeLinks?: string[];
+  gifs?: TenorGif[];
+  gifUsageInfo?: {
+    used: number;
+    remaining: number;
+    canUseMore: boolean;
+  };
 }
 
 /**
@@ -30,12 +37,23 @@ export const generateGeminiResponse = async (
   userMessage: string,
   subject: string,
   subjectDescription: string,
-  subjectId?: string
+  subjectId?: string,
+  userId?: string
 ): Promise<GeminiResponse> => {
   try {
     // Validate API key
     if (!API_KEY || API_KEY === 'your-gemini-api-key') {
       throw new Error('API key do Gemini não configurada');
+    }
+
+    // Check if user is requesting visual content and GIF usage limit
+    const isRequestingVisual = /visual|imagem|gif|animação|demonstr|exemplo|mostrar|ver|ilustr/i.test(userMessage);
+    let gifUsageInfo = null;
+    let gifs: TenorGif[] = [];
+    
+    if (isRequestingVisual && userId) {
+      const usage = await checkGifUsageLimit(userId);
+      gifUsageInfo = { used: usage.usageCount, remaining: 3 - usage.usageCount, canUseMore: usage.canUse };
     }
 
     // Fetch relevant books from database if subjectId is provided
@@ -87,6 +105,12 @@ Bibliografia de referência para ${subject}:
 ${getBibliographyForSubject(subject)}
 `}
 
+${isRequestingVisual ? `
+IMPORTANTE: O aluno está pedindo conteúdo visual! ${gifUsageInfo?.canUseMore ? 
+  'Você pode sugerir que ele veja GIFs educacionais sobre o tópico.' : 
+  `O aluno já usou ${gifUsageInfo?.used}/3 GIFs hoje. Explique que o limite diário foi atingido.`}
+` : ''}
+
 Pergunta do aluno: "${userMessage}"
 
 INSTRUÇÕES IMPORTANTES:
@@ -99,6 +123,14 @@ INSTRUÇÕES IMPORTANTES:
 7. 🎪 Mantenha a resposta entre 200-300 palavras
 8. 🔄 Se a pergunta não for da disciplina, redirecione com carinho para o tema
 ${bookContent ? '9. 🎯 CRUCIAL: Responda APENAS com base no conteúdo dos livros fornecido. Não invente informações.' : ''}
+
+${isRequestingVisual && gifUsageInfo?.canUseMore ? `
+10. 🎬 VISUAL: Como o aluno pediu conteúdo visual, mencione que você pode mostrar GIFs educacionais sobre o tópico!
+` : ''}
+
+${isRequestingVisual && !gifUsageInfo?.canUseMore ? `
+10. ⚠️ LIMITE: O aluno atingiu o limite de 3 GIFs por dia. Explique isso de forma carinhosa e ofereça explicação textual detalhada.
+` : ''}
 
 FORMATO DA RESPOSTA:
 [Saudação carinhosa com emoji]
@@ -113,6 +145,10 @@ FORMATO DA RESPOSTA:
 📚 **Fonte:** ${bookContent ? sourceBook + ' - ' + sourceChapter : '[Nome do livro] - [Capítulo específico]'}
 
 [Pergunta encorajadora para continuar o aprendizado]
+
+${isRequestingVisual && gifUsageInfo?.canUseMore ? `
+🎬 **Quer ver isso em ação?** Posso mostrar GIFs educacionais sobre este tópico! (Você tem ${gifUsageInfo.remaining} visualizações restantes hoje)
+` : ''}
 
 IMPORTANTE: Use links REAIS do YouTube que existem e são educativos sobre o tópico perguntado.
 `;
@@ -135,6 +171,31 @@ IMPORTANTE: Use links REAIS do YouTube que existem e são educativos sobre o tó
 
     if (!text || text.trim() === '') {
       throw new Error('Resposta vazia da API');
+    }
+
+    // Search for educational GIFs if user requested visual content and has usage remaining
+    if (isRequestingVisual && userId && gifUsageInfo?.canUseMore) {
+      try {
+        console.log('🎬 Searching for educational GIFs...');
+        gifs = await searchEducationalGifs(userMessage, subject, 2);
+        
+        if (gifs.length > 0) {
+          // Update usage count
+          await updateGifUsage(userId);
+          console.log(`✅ Found ${gifs.length} educational GIFs`);
+          
+          // Update usage info after increment
+          const updatedUsage = await checkGifUsageLimit(userId);
+          gifUsageInfo = { 
+            used: updatedUsage.usageCount, 
+            remaining: 3 - updatedUsage.usageCount, 
+            canUseMore: updatedUsage.canUse 
+          };
+        }
+      } catch (error) {
+        console.error('❌ Error searching GIFs:', error);
+        // Continue without GIFs if there's an error
+      }
     }
 
     // Extract YouTube links from the response
@@ -161,7 +222,9 @@ sourceChapter = sourceMatch ? sourceMatch[2].trim() : `Capítulo ${Math.floor(Ma
       content: cleanContent,
       sourceBook: sourceBook,
       sourceChapter: sourceChapter,
-      youtubeLinks: finalYouTubeLinks
+      youtubeLinks: finalYouTubeLinks,
+      gifs: gifs,
+      gifUsageInfo: gifUsageInfo
     };
   } catch (error: any) {
     console.error('Error generating Gemini response:', error);
@@ -186,7 +249,9 @@ sourceChapter = sourceMatch ? sourceMatch[2].trim() : `Capítulo ${Math.floor(Ma
                '\n\n💪 Não desista! Aprender é uma aventura incrível!',
       sourceBook: sourceBook,
       sourceChapter: sourceChapter,
-      youtubeLinks: fallbackLinks
+      youtubeLinks: fallbackLinks,
+      gifs: [],
+      gifUsageInfo: null
     };
   }
 };
